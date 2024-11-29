@@ -1,5 +1,6 @@
 package com.codopedia.journalApp.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -15,6 +16,7 @@ import java.util.List;
 @Document(collection= "users")
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     private ObjectId id;
@@ -27,5 +29,7 @@ public class User {
 
     @DBRef
     private List<JournalEntry> journalEntryList = new ArrayList<>();
+
+    private  List<String> roles = new ArrayList<>();
 
 }

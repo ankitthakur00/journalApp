@@ -6,9 +6,12 @@ import com.codopedia.journalApp.repository.JournalEntryRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class JournalEntryService {
@@ -19,60 +22,44 @@ public class JournalEntryService {
     @Autowired
     private UserService userService;
 
-    public Boolean createJournalForUser(JournalEntry journalEntry, String userName){
-        try{
-            User user = userService.findByUserName(userName);
-            journalEntry.setDate(LocalDateTime.now());
-            JournalEntry createdJournal = journalEntryRepository.save(journalEntry);
-            user.getJournalEntryList().add(createdJournal);
-            userService.createUser(user);
-            return true;
-        }
-        catch (Exception ex){
-            return false;
-        }
+    @Transactional
+    public void createJournalForUser(JournalEntry journalEntry, String userName){
+        User user = userService.findByUserName(userName);
+        journalEntry.setDate(LocalDateTime.now());
+        JournalEntry createdJournal = journalEntryRepository.save(journalEntry);
+        userService.updateUserAddJournal(user, createdJournal);
     }
 
 
     public List<JournalEntry> getAllJournalOfUser(String userName){
-        try{
-            User user = userService.findByUserName(userName);
-            return user.getJournalEntryList();
-        }
-        catch (Exception ex){
-            return null;
-        }
-    }
-
-    public JournalEntry getJournalByID(ObjectId id){
-        return journalEntryRepository.findById(id).orElse(null);
-    }
-
-    public boolean deleteByID(String userName, ObjectId id){
         User user = userService.findByUserName(userName);
-        JournalEntry journal = this.getJournalByID(id);
-        if(journal!=null &&  user!=null){
-            try{
-                user.getJournalEntryList().removeIf(x-> x.getId().equals(id));
-                userService.createUser(user);
-                journalEntryRepository.deleteById(id);
-                return true;
-            }
-            catch (Exception ex){
-                return false;
-            }
-        }
-        return false;
+        return user.getJournalEntryList();
     }
 
-    public JournalEntry updateById(String userName, ObjectId id, JournalEntry journalEntry) {
-        JournalEntry oldEntry = this.getJournalByID(id);
-        if(oldEntry!=null){
-            oldEntry.setTitle(journalEntry.getTitle()!=null && !journalEntry.getTitle().isEmpty() ? journalEntry.getTitle() : oldEntry.getTitle());
-            oldEntry.setContent(journalEntry.getContent()!=null && !journalEntry.getContent().isEmpty() ? journalEntry.getContent() : oldEntry.getContent());
-            journalEntryRepository.save(oldEntry);
-            return oldEntry;
-        }
-        return null;
+    public Optional<JournalEntry> getJournalByID(ObjectId id){
+        return journalEntryRepository.findById(id);
     }
+
+    public Optional<JournalEntry> getJournal(ObjectId id, String userName) {
+        User user = userService.findByUserName(userName);
+        List<JournalEntry> collect = user.getJournalEntryList().stream().filter(x->x.getId().equals(id)).toList();
+        if(!collect.isEmpty()){
+            return journalEntryRepository.findById(id);
+        }
+        return Optional.empty();
+    }
+
+    @Transactional
+    public void deleteJournal(String userName, JournalEntry journal){
+        User user = userService.findByUserName(userName);
+        journalEntryRepository.deleteById(journal.getId());
+        userService.updateUserDeleteJournal(user, journal);
+    }
+
+    public JournalEntry updateJournal(String userName, JournalEntry oldJournal, JournalEntry journalEntry) {
+        oldJournal.setTitle(!journalEntry.getTitle().isEmpty() ? journalEntry.getTitle() : oldJournal.getTitle());
+        oldJournal.setContent(journalEntry.getContent()!=null && !journalEntry.getContent().isEmpty() ? journalEntry.getContent() : oldJournal.getContent());
+        return journalEntryRepository.save(oldJournal);
+    }
+
 }
