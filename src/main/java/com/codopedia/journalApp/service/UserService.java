@@ -19,7 +19,7 @@ public class UserService {
     @Autowired
     UserRepository userRepository;
 
-    private PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public List<User> getAllUsers() {
         try{
@@ -73,4 +73,27 @@ public class UserService {
         user.getJournalEntryList().removeIf(x-> x.getId().equals(journal.getId()));
         userRepository.save(user);
     }
+
+    public User createAdminUser(User user) {
+        try{
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            user.setRoles(List.of("USER", "ADMIN"));
+            return userRepository.save(user);
+        }
+        catch (Exception ex){
+            return null;
+        }
+    }
+
+    public User createSuperAdminUser(User user) {
+        try{
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            user.setRoles(List.of("USER", "ADMIN", "SUPER_ADMIN"));
+            return userRepository.save(user);
+        }
+        catch (Exception ex){
+            return null;
+        }
+    }
+
 }
