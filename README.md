@@ -3,6 +3,8 @@
 
 Application to create, update, delete, manage journals.
 
+#API Documentation
+https://documenter.getpostman.com/view/10325003/2sAYBYeV1C
 
 ## Tech Stack
 
